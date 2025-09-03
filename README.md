@@ -166,7 +166,7 @@ The Multiplayer Proxy enables capturing request/response and header content with
 
 The Multiplayer Full Stack Session Recorder can be used inside the CLI apps.
 
-The [Multiplayer Time Travel Demo](https://github.com/multiplayer-app/multiplayer-time-travel-platform) includes an example [node.js CLI app](https://github.com/multiplayer-app/multiplayer-time-travel-platform/tree/main/clients/go-cli-app).
+The [Multiplayer Time Travel Demo](https://github.com/multiplayer-app/multiplayer-time-travel-platform) includes an example [Go CLI app](https://github.com/multiplayer-app/multiplayer-time-travel-platform/tree/main/clients/go-cli-app).
 
 See an additional example below.
 
