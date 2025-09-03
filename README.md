@@ -1,4 +1,4 @@
-![Description](./docs/img/header-go.png)
+![Description](./docs/img/header-js.png)
 
 <div align="center">
 <a href="https://github.com/multiplayer-app/multiplayer-session-recorder-javascript">
@@ -33,9 +33,7 @@ The Multiplayer Full Stack Session Recorder is a powerful tool that offers deep 
 ## Install
 
 ```bash
-npm i @multiplayer-app/session-recorder-node
-# or
-yarn add @multiplayer-app/session-recorder-node
+go get github.com/multiplayer-app/multiplayer-otlp-go
 ```
 
 ## Set up backend services
@@ -63,65 +61,64 @@ Send OpenTelemetry data from your services to Multiplayer and optionally other d
 
 This is the quickest way to get started, but consider using an OpenTelemetry Collector (see [Option 2](#option-2-opentelemetry-collector) below) if you're scalling or a have a large platform.
 
-```javascript
-import {
-  SessionRecorderHttpTraceExporter,
-  SessionRecorderHttpLogsExporter,
-  SessionRecorderTraceExporterWrapper
-  SessionRecorderLogsExporterWrapper,
-} from "@multiplayer-app/session-recorder-node"
-import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http"
-import { OTLPLogExporter } from "@opentelemetry/exporter-logs-otlp-http"
+```go
+import (
+    "github.com/multiplayer-app/multiplayer-otlp-go/exporters"
+    "go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+    "go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
+)
 
 // set up Multiplayer exporters. Note: GRPC exporters are also available.
-// see: `SessionRecorderGrpcTraceExporter` and `SessionRecorderGrpcLogsExporter`
-const multiplayerTraceExporter = new SessionRecorderHttpTraceExporter({
-  apiKey: "MULTIPLAYER_OTLP_KEY", // note: replace with your Multiplayer OTLP key
-})
-const multiplayerLogExporter = new SessionRecorderHttpLogsExporter({
-  apiKey: "MULTIPLAYER_OTLP_KEY", // note: replace with your Multiplayer OTLP key
-})
+// see: NewSessionRecorderGrpcTraceExporter and NewSessionRecorderGrpcLogsExporter
+multiplayerTraceExporter, err := exporters.NewSessionRecorderHttpTraceExporter(
+    "MULTIPLAYER_OTLP_KEY", // note: replace with your Multiplayer OTLP key
+)
+if err != nil {
+    log.Fatal(err)
+}
+
+multiplayerLogExporter, err := exporters.NewSessionRecorderHttpLogsExporter(
+    "MULTIPLAYER_OTLP_KEY", // note: replace with your Multiplayer OTLP key
+)
+if err != nil {
+    log.Fatal(err)
+}
 
 // Multiplayer exporter wrappers filter out session recording atrtributes before passing to provided exporter
-const traceExporter = new SessionRecorderTraceExporterWrapper(
-  // add any OTLP trace exporter
-  new OTLPTraceExporter({
-    // ...
-  })
-)
-const logExporter = new SessionRecorderLogsExporterWrapper(
-  // add any OTLP log exporter
-  new OTLPLogExporter({
-    // ...
-  })
-)
+standardTraceExporter, _ := otlptracehttp.New(ctx)
+traceExporter := exporters.NewSessionRecorderTraceExporterWrapper(standardTraceExporter)
+
+standardLogExporter, _ := otlploghttp.New(ctx)
+logExporter := exporters.NewSessionRecorderLogsExporterWrapper(standardLogExporter)
 ```
 
 ### Option 2: OpenTelemetry Collector
 
 If you're scalling or a have a large platform, consider running a dedicated collector. See the Multiplayer OpenTelemetry collector [repository](https://github.com/multiplayer-app/multiplayer-otlp-collector) which shows how to configure the standard OpenTelemetry Collector to send data to Multiplayer and optional other destinations.
 
-Add standard [OpenTelemetry code](https://opentelemetry.io/docs/languages/js/exporters/) to export OTLP data to your collector.
+Add standard [OpenTelemetry code](https://opentelemetry.io/docs/languages/go/exporters/) to export OTLP data to your collector.
 
 See a basic example below:
 
-```javascript
-import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http"
-import { OTLPLogExporter } from "@opentelemetry/exporter-logs-otlp-http"
+```go
+import (
+    "go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+    "go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
+)
 
-const traceExporter = new OTLPTraceExporter({
-  url: "http://<OTLP_COLLECTOR_URL>/v1/traces",
-  headers: {
-    // ...
-  }
-})
+traceExporter, err := otlptracehttp.New(ctx,
+    otlptracehttp.WithEndpoint("http://<OTLP_COLLECTOR_URL>/v1/traces"),
+    otlptracehttp.WithHeaders(map[string]string{
+        // ...
+    }),
+)
 
-const logExporter = new OTLPLogExporter({
-  url: "http://<OTLP_COLLECTOR_URL>/v1/logs",
-  headers: {
-    // ...
-  }
-})
+logExporter, err := otlploghttp.New(ctx,
+    otlploghttp.WithEndpoint("http://<OTLP_COLLECTOR_URL>/v1/logs"),
+    otlploghttp.WithHeaders(map[string]string{
+        // ...
+    }),
+)
 ```
 
 ### Capturing request/response and header content
@@ -136,35 +133,29 @@ In addition to sending traces and logs, you need to capture request and response
 
 The Multiplayer Session Recorder library provides utilities for capturing request, response and header content. See example below:
 
-```javascript
-import {
-  SessionRecorderHttpInstrumentationHooksNode,
-} from "@multiplayer-app/session-recorder-node"
-import {
-  getNodeAutoInstrumentations,
-} from "@opentelemetry/auto-instrumentations-node"
-import { type Instrumentation } from "@opentelemetry/instrumentation"
+```go
+import (
+    "github.com/multiplayer-app/multiplayer-otlp-go/middleware"
+    "net/http"
+)
 
-export const instrumentations: Instrumentation[] = getNodeAutoInstrumentations({
-  "@opentelemetry/instrumentation-http": {
-    enabled: true,
-    responseHook: SessionRecorderHttpInstrumentationHooksNode.responseHook({
-      // list of headers to mask in request/response headers
-      maskHeadersList: ["set-cookie"],
-      // set the maximum request/response content size (in bytes) that will be captured
-      // any request/response content greater than size will be not included in session recordings
-      maxPayloadSizeBytes: 500000,
-      isMaskBodyEnabled: false,
-      isMaskHeadersEnabled: true,
-    }),
-    requestHook: SessionRecorderHttpInstrumentationHooksNode.requestHook({
-      maskHeadersList: ["Authorization", "cookie"],
-      maxPayloadSizeBytes: 500000,
-      isMaskBodyEnabled: false,
-      isMaskHeadersEnabled: true,
-    }),
-  }
-})
+// configure middleware options
+options := middleware.NewMiddlewareOptions(
+    middleware.WithCaptureHeaders(true),
+    middleware.WithCaptureBody(true),
+    middleware.WithMaskHeadersEnabled(true),
+    middleware.WithMaskBodyEnabled(false),
+    // set the maximum request/response content size (in bytes) that will be captured
+    // any request/response content greater than size will be not included in session recordings
+    middleware.WithMaxPayloadSizeBytes(500000),
+    // list of headers to mask in request/response headers
+    middleware.WithMaskHeadersList([]string{"set-cookie", "Authorization", "cookie"}),
+)
+
+// Apply middleware to your HTTP handlers
+handler := middleware.WithRequestData(http.HandlerFunc(yourHandler), options)
+handler = middleware.WithResponseData(handler, options)
+
 ```
 
 ### Option 2: Multiplayer Proxy
@@ -175,7 +166,7 @@ The Multiplayer Proxy enables capturing request/response and header content with
 
 The Multiplayer Full Stack Session Recorder can be used inside the CLI apps.
 
-The [Multiplayer Time Travel Demo](https://github.com/multiplayer-app/multiplayer-time-travel-platform) includes an example [node.js CLI app](https://github.com/multiplayer-app/multiplayer-time-travel-platform/tree/main/clients/nodejs-cli-app).
+The [Multiplayer Time Travel Demo](https://github.com/multiplayer-app/multiplayer-time-travel-platform) includes an example [node.js CLI app](https://github.com/multiplayer-app/multiplayer-time-travel-platform/tree/main/clients/go-cli-app).
 
 See an additional example below.
 
@@ -183,46 +174,53 @@ See an additional example below.
 
 Use the following code below to initialize and run the session recorder.
 
-Example for Session Recorder initialization relies on [opentelemetry.ts](./examples/cli/src/opentelemetry.ts) file. Copy that file and put next to quick start code.
+Example for Session Recorder initialization relies on [opentelemetry.go](./example/cli/opentelemetry.go) file. Copy that file and put next to quick start code.
 
-```javascript
+```go
 // IMPORTANT: set up OpenTelemetry
-// for an example see ./examples/cli/src/opentelemetry.ts
-// NOTE: for the code below to work copy ./examples/cli/src/opentelemetry.ts to ./opentelemetry.ts
-import { idGenerator } from "./opentelemetry"
-import SessionRecorder from "@multiplayer-app/session-recorder-node"
-import {
-  SessionRecorderHttpInstrumentationHooksNode,
-  SessionRecorderTraceIdRatioBasedSampler,
-  SessionRecorderIdGenerator,
-  SessionRecorderHttpTraceExporter,
-  SessionRecorderHttpLogsExporter,
-} from "@multiplayer-app/session-recorder-node"
-
-SessionRecorder.init({
-  apiKey: "MULTIPLAYER_OTLP_KEY", // note: replace with your Multiplayer OTLP key
-  traceIdGenerator: idGenerator,
-  resourceAttributes: {
-    serviceName: "{YOUR_APPLICATION_NAME}"
-    version: "{YOUR_APPLICATION_VERSION}",
-    environment: "{YOUR_APPLICATION_ENVIRONMENT}",
-  }
-})
-
-await sessionRecorder.start(
-  SessionType.PLAIN,
-  {
-    name: "This is test session",
-    sessionAttributes: {
-      accountId: "687e2c0d3ec8ef6053e9dc97",
-      accountName: "Acme Corporation"
-    }
-  }
+// for an example see ./example/cli/opentelemetry.go
+import (
+    "github.com/multiplayer-app/multiplayer-otlp-go/session_recorder"
+    "github.com/multiplayer-app/multiplayer-otlp-go/types"
 )
+
+// initialize session recorder
+sr := session_recorder.NewSessionRecorder()
+
+config := session_recorder.SessionRecorderConfig{
+    APIKey:           "MULTIPLAYER_OTLP_KEY", // note: replace with your Multiplayer OTLP key
+    TraceIDGenerator: idGenerator, // from OpenTelemetry setup
+    ResourceAttributes: map[string]interface{}{
+        "serviceName":  "{YOUR_APPLICATION_NAME}",
+        "version":      "{YOUR_APPLICATION_VERSION}",
+        "environment":  "{YOUR_APPLICATION_ENVIRONMENT}",
+    },
+}
+
+err := sr.Init(config)
+if err != nil {
+    log.Fatal(err)
+}
+
+session := &session_recorder.Session{
+    Name: "This is test session",
+    SessionAttributes: map[string]interface{}{
+        "accountId":   "687e2c0d3ec8ef6053e9dc97",
+        "accountName": "Acme Corporation",
+    },
+}
+
+err = sr.Start(types.SESSION_TYPE_PLAIN, session)
+if err != nil {
+    log.Fatal(err)
+}
 
 // do something here
 
-await sessionRecorder.stop()
+err = sr.Stop(nil)
+if err != nil {
+    log.Fatal(err)
+}
 ```
 
 Replace the placeholders with your application’s version, name, environment, and API key.
