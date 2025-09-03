@@ -1,4 +1,4 @@
-![Description](./docs/img/header-js.png)
+![Description](./docs/img/header-go.png)
 
 <div align="center">
 <a href="https://github.com/multiplayer-app/multiplayer-session-recorder-javascript">

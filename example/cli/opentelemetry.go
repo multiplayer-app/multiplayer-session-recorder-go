@@ -25,16 +25,11 @@ func init() {
 }
 
 func setupOpenTelemetry() {
-	ctx := context.Background()
-	
 	// Create resource
 	res := getResource()
 	
 	// Create trace exporter
-	traceExporter, err := exporters.NewSessionRecorderHttpTraceExporter(exporters.SessionRecorderHttpTraceExporterConfig{
-		APIKey: MULTIPLAYER_OTLP_KEY,
-		URL:    OTLP_TRACES_ENDPOINT,
-	})
+	traceExporter, err := exporters.NewSessionRecorderHttpTraceExporter(MULTIPLAYER_OTLP_KEY, OTLP_TRACES_ENDPOINT)
 	if err != nil {
 		log.Fatalf("Failed to create trace exporter: %v", err)
 	}
@@ -53,28 +48,12 @@ func setupOpenTelemetry() {
 		trace.WithIDGenerator(idGenerator),
 	)
 	
-	// Create log exporter
-	logExporter, err := exporters.NewSessionRecorderHttpLogsExporter(exporters.SessionRecorderHttpLogsExporterConfig{
-		APIKey: MULTIPLAYER_OTLP_KEY,
-		URL:    OTLP_LOGS_ENDPOINT,
-	})
-	if err != nil {
-		log.Fatalf("Failed to create log exporter: %v", err)
-	}
-	
-	// Create log provider
-	loggerProvider := log.NewLoggerProvider(
-		log.WithResource(res),
-		log.WithProcessor(log.NewBatchProcessor(logExporter)),
-	)
+	// Create log exporter (commented out for now due to API differences)
+	// logExporter := exporters.NewSessionRecorderHttpLogsExporter(MULTIPLAYER_OTLP_KEY, OTLP_LOGS_ENDPOINT)
 	
 	// Set global providers
 	otel.SetTracerProvider(tracerProvider)
 	otel.SetTextMapPropagator(propagation.TraceContext{})
-	
-	// Set global logger provider (if available in your OpenTelemetry version)
-	// Note: This might need adjustment based on your OpenTelemetry Go version
-	_ = loggerProvider // Use the logger provider as needed
 }
 
 func getResource() *resource.Resource {

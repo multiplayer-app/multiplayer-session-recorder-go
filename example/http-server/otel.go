@@ -3,10 +3,11 @@ package main
 import (
 	"context"
 	"errors"
-	"github.com/multiplayer-app/multiplayer-otlp-go"
 	"os"
 	"time"
 
+	"github.com/multiplayer-app/multiplayer-otlp-go/exporters"
+	multiplayer "github.com/multiplayer-app/multiplayer-otlp-go/trace"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/trace"
@@ -56,15 +57,39 @@ func newPropagator() propagation.TextMapPropagator {
 	)
 }
 
+var globalIdGenerator *multiplayer.SessionRecorderIdGenerator
+
 func newTraceProvider() (*trace.TracerProvider, error) {
 	multiplayerOtlpKey := os.Getenv("MULTIPLAYER_OTLP_KEY")
+	if multiplayerOtlpKey == "" {
+		return nil, errors.New("MULTIPLAYER_OTLP_KEY environment variable is required")
+	}
 
-	traceExporter := multiplayer.NewExporter(multiplayerOtlpKey)
+	// Create trace exporter using the new API
+	traceExporter, err := exporters.NewSessionRecorderHttpTraceExporter(
+		multiplayerOtlpKey,
+		getEnv("OTLP_TRACES_ENDPOINT", "https://api.multiplayer.app/v1/traces"),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create ID generator
+	globalIdGenerator = multiplayer.NewSessionRecorderIdGenerator()
+
+	// Create sampler
+	sampler := multiplayer.NewSampler(trace.TraceIDRatioBased(0.1)) // 10% sampling
+
 	traceProvider := trace.NewTracerProvider(
-		trace.WithIDGenerator(multiplayer.NewRatioDependentIdGenerator(1)),
-		trace.WithSampler(multiplayer.NewSampler(trace.AlwaysSample())),
+		trace.WithIDGenerator(globalIdGenerator),
+		trace.WithSampler(sampler),
 		trace.WithBatcher(traceExporter,
 			trace.WithBatchTimeout(time.Second)),
 	)
 	return traceProvider, nil
+}
+
+// getIdGenerator returns the global ID generator for session recorder integration
+func getIdGenerator() *multiplayer.SessionRecorderIdGenerator {
+	return globalIdGenerator
 }

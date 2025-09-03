@@ -38,7 +38,7 @@
 Before launching CLI app, start Time Travel in your docker-compose
 
 ```bash
-MULTIPLAYER_OTLP_KEY="your-key" ./cli-example
+MULTIPLAYER_OTLP_KEY="your-key" go run .
 ```
 
 ## License
