@@ -1,11 +1,11 @@
 ![Description](./docs/img/header-go.png)
 
 <div align="center">
-<a href="https://github.com/multiplayer-app/multiplayer-session-recorder-javascript">
-  <img src="https://img.shields.io/github/stars/multiplayer-app/multiplayer-session-recorder-javascript?style=social&label=Star&maxAge=2592000" alt="GitHub stars">
+<a href="https://github.com/multiplayer-app/multiplayer-session-recorder-go">
+  <img src="https://img.shields.io/github/stars/multiplayer-app/multiplayer-session-recorder-go?style=social&label=Star&maxAge=2592000" alt="GitHub stars">
 </a>
-  <a href="https://github.com/multiplayer-app/multiplayer-session-recorder-javascript/blob/main/LICENSE">
-    <img src="https://img.shields.io/github/license/multiplayer-app/multiplayer-session-recorder-javascript" alt="License">
+  <a href="https://github.com/multiplayer-app/multiplayer-session-recorder-go/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/multiplayer-app/multiplayer-session-recorder-go" alt="License">
   </a>
   <a href="https://multiplayer.app">
     <img src="https://img.shields.io/badge/Visit-multiplayer.app-blue" alt="Visit Multiplayer">
