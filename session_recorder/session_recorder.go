@@ -30,21 +30,21 @@ type TraceIDGenerator interface {
 }
 
 type SessionRecorder struct {
-	isInitialized            bool
-	shortSessionID           string
-	traceIDGenerator         TraceIDGenerator
-	sessionType              types.SessionType
-	sessionState             SessionState
-	apiService               *APIService
-	sessionShortIDGenerator  func() string
-	resourceAttributes       map[string]interface{}
+	isInitialized           bool
+	shortSessionID          string
+	traceIDGenerator        TraceIDGenerator
+	sessionType             types.SessionType
+	sessionState            SessionState
+	apiService              *APIService
+	sessionShortIDGenerator func() string
+	resourceAttributes      map[string]interface{}
 }
 
 func NewSessionRecorder() *SessionRecorder {
 	return &SessionRecorder{
 		isInitialized:           false,
 		shortSessionID:          "",
-		sessionType:             types.SESSION_TYPE_PLAIN,
+		sessionType:             types.SESSION_TYPE_MANUAL,
 		sessionState:            SessionStateStopped,
 		apiService:              NewAPIService(),
 		sessionShortIDGenerator: defaultSessionShortIDGenerator,
@@ -79,7 +79,7 @@ func (sr *SessionRecorder) Init(config SessionRecorderConfig) error {
 	}
 
 	sr.traceIDGenerator = config.TraceIDGenerator
-	
+
 	apiConfig := APIServiceConfig{
 		APIKey:     config.APIKey,
 		APIBaseURL: config.APIBaseURL,
@@ -170,7 +170,7 @@ func (sr *SessionRecorder) Save(sessionData *Session) error {
 
 func (sr *SessionRecorder) Stop(sessionData *Session) error {
 	defer func() {
-		sr.traceIDGenerator.SetSessionId("", types.SESSION_TYPE_PLAIN)
+		sr.traceIDGenerator.SetSessionId("", types.SESSION_TYPE_MANUAL)
 		sr.shortSessionID = ""
 		sr.sessionState = SessionStateStopped
 	}()
@@ -183,7 +183,7 @@ func (sr *SessionRecorder) Stop(sessionData *Session) error {
 		return errors.New("session should be active or paused")
 	}
 
-	if sr.sessionType != types.SESSION_TYPE_PLAIN {
+	if sr.sessionType != types.SESSION_TYPE_MANUAL {
 		return errors.New("invalid session type")
 	}
 
@@ -196,7 +196,7 @@ func (sr *SessionRecorder) Stop(sessionData *Session) error {
 
 func (sr *SessionRecorder) Cancel() error {
 	defer func() {
-		sr.traceIDGenerator.SetSessionId("", types.SESSION_TYPE_PLAIN)
+		sr.traceIDGenerator.SetSessionId("", types.SESSION_TYPE_MANUAL)
 		sr.shortSessionID = ""
 		sr.sessionState = SessionStateStopped
 	}()
@@ -211,7 +211,7 @@ func (sr *SessionRecorder) Cancel() error {
 
 	if sr.sessionType == types.SESSION_TYPE_CONTINUOUS {
 		return sr.apiService.StopContinuousSession(sr.shortSessionID)
-	} else if sr.sessionType == types.SESSION_TYPE_PLAIN {
+	} else if sr.sessionType == types.SESSION_TYPE_MANUAL {
 		return sr.apiService.CancelSession(sr.shortSessionID)
 	}
 

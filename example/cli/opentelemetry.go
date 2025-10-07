@@ -29,7 +29,7 @@ func setupOpenTelemetry() {
 	res := getResource()
 	
 	// Create trace exporter
-	traceExporter, err := exporters.NewSessionRecorderHttpTraceExporter(MULTIPLAYER_OTLP_KEY, OTLP_TRACES_ENDPOINT)
+	traceExporter, err := exporters.NewSessionRecorderHttpTraceExporter(MULTIPLAYER_API_KEY, OTLP_TRACES_ENDPOINT)
 	if err != nil {
 		log.Fatalf("Failed to create trace exporter: %v", err)
 	}
@@ -49,7 +49,7 @@ func setupOpenTelemetry() {
 	)
 	
 	// Create log exporter (commented out for now due to API differences)
-	// logExporter := exporters.NewSessionRecorderHttpLogsExporter(MULTIPLAYER_OTLP_KEY, OTLP_LOGS_ENDPOINT)
+	// logExporter := exporters.NewSessionRecorderHttpLogsExporter(MULTIPLAYER_API_KEY, OTLP_LOGS_ENDPOINT)
 	
 	// Set global providers
 	otel.SetTracerProvider(tracerProvider)

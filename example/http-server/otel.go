@@ -60,9 +60,9 @@ func newPropagator() propagation.TextMapPropagator {
 var globalIdGenerator *multiplayer.SessionRecorderIdGenerator
 
 func newTraceProvider() (*trace.TracerProvider, error) {
-	multiplayerOtlpKey := os.Getenv("MULTIPLAYER_OTLP_KEY")
+	multiplayerOtlpKey := os.Getenv("MULTIPLAYER_API_KEY")
 	if multiplayerOtlpKey == "" {
-		return nil, errors.New("MULTIPLAYER_OTLP_KEY environment variable is required")
+		return nil, errors.New("MULTIPLAYER_API_KEY environment variable is required")
 	}
 
 	// Create trace exporter using the new API

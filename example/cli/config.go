@@ -14,7 +14,7 @@ var (
 	COMPONENT_VERSION = getEnv("COMPONENT_VERSION", "0.0.1")
 	ENVIRONMENT       = getEnv("ENVIRONMENT", "staging")
 	
-	MULTIPLAYER_OTLP_KEY = getRequiredEnv("MULTIPLAYER_OTLP_KEY")
+	MULTIPLAYER_API_KEY = getRequiredEnv("MULTIPLAYER_API_KEY")
 	
 	OTLP_TRACES_ENDPOINT = getEnv("OTLP_TRACES_ENDPOINT", "https://api.multiplayer.app/v1/traces")
 	OTLP_LOGS_ENDPOINT   = getEnv("OTLP_LOGS_ENDPOINT", "https://api.multiplayer.app/v1/logs")

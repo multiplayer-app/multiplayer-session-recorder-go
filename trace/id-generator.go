@@ -15,12 +15,12 @@ import (
 )
 
 type SessionRecorderIdGenerator struct {
-	sessionShortId string
-	sessionType    types.SessionType
-	generateLongId func() string
+	sessionShortId  string
+	sessionType     types.SessionType
+	generateLongId  func() string
 	generateShortId func() string
-	randSource     *rand.Rand
-	mutex          sync.Mutex
+	randSource      *rand.Rand
+	mutex           sync.Mutex
 }
 
 var _ otelTrace.IDGenerator = &SessionRecorderIdGenerator{}
@@ -32,7 +32,7 @@ func NewSessionRecorderIdGenerator() *SessionRecorderIdGenerator {
 
 	return &SessionRecorderIdGenerator{
 		sessionShortId:  "",
-		sessionType:     types.SESSION_TYPE_PLAIN,
+		sessionType:     types.SESSION_TYPE_MANUAL,
 		generateLongId:  getIdGenerator(16, randSource), // 16 bytes = 32 hex chars
 		generateShortId: getIdGenerator(8, randSource),  // 8 bytes = 16 hex chars
 		randSource:      randSource,
@@ -60,7 +60,7 @@ func (gen *SessionRecorderIdGenerator) generateTraceId() string {
 		}
 
 		prefix := sessionTypePrefix + gen.sessionShortId
-		
+
 		if len(prefix) < len(traceId) {
 			sessionTraceId := prefix + traceId[len(prefix):]
 			return sessionTraceId
@@ -94,7 +94,7 @@ func (gen *SessionRecorderIdGenerator) NewIDs(ctx context.Context) (trace.TraceI
 		if err == nil && len(traceIdBytes) == 16 {
 			copy(tid[:], traceIdBytes)
 		}
-		
+
 		if !tid.IsValid() {
 			for {
 				binary.NativeEndian.PutUint64(tid[:8], gen.randSource.Uint64())

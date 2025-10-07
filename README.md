@@ -71,14 +71,14 @@ import (
 // set up Multiplayer exporters. Note: GRPC exporters are also available.
 // see: NewSessionRecorderGrpcTraceExporter and NewSessionRecorderGrpcLogsExporter
 multiplayerTraceExporter, err := exporters.NewSessionRecorderHttpTraceExporter(
-    "MULTIPLAYER_OTLP_KEY", // note: replace with your Multiplayer OTLP key
+    "MULTIPLAYER_API_KEY", // note: replace with your Multiplayer API key
 )
 if err != nil {
     log.Fatal(err)
 }
 
 multiplayerLogExporter, err := exporters.NewSessionRecorderHttpLogsExporter(
-    "MULTIPLAYER_OTLP_KEY", // note: replace with your Multiplayer OTLP key
+    "MULTIPLAYER_API_KEY", // note: replace with your Multiplayer API key
 )
 if err != nil {
     log.Fatal(err)
@@ -176,6 +176,8 @@ Use the following code below to initialize and run the session recorder.
 
 Example for Session Recorder initialization relies on [opentelemetry.go](./example/cli/opentelemetry.go) file. Copy that file and put next to quick start code.
 
+### Initialize
+
 ```go
 // IMPORTANT: set up OpenTelemetry
 // for an example see ./example/cli/opentelemetry.go
@@ -188,7 +190,7 @@ import (
 sr := session_recorder.NewSessionRecorder()
 
 config := session_recorder.SessionRecorderConfig{
-    APIKey:           "MULTIPLAYER_OTLP_KEY", // note: replace with your Multiplayer OTLP key
+    APIKey:           "MULTIPLAYER_API_KEY", // note: replace with your Multiplayer API key
     TraceIDGenerator: idGenerator, // from OpenTelemetry setup
     ResourceAttributes: map[string]interface{}{
         "serviceName":  "{YOUR_APPLICATION_NAME}",
@@ -201,16 +203,22 @@ err := sr.Init(config)
 if err != nil {
     log.Fatal(err)
 }
+```
 
+### Manual session recording
+
+Below is an example showing how to create a session recording in `MANUAL` mode. Manual session recordings stream and save all the data between calling `Start` and `Stop`.
+
+```go
 session := &session_recorder.Session{
     Name: "This is test session",
     SessionAttributes: map[string]interface{}{
-        "accountId":   "687e2c0d3ec8ef6053e9dc97",
+        "accountId":   "1234",
         "accountName": "Acme Corporation",
     },
 }
 
-err = sr.Start(types.SESSION_TYPE_PLAIN, session)
+err = sr.Start(types.SESSION_TYPE_MANUAL, session)
 if err != nil {
     log.Fatal(err)
 }
@@ -220,6 +228,80 @@ if err != nil {
 err = sr.Stop(nil)
 if err != nil {
     log.Fatal(err)
+}
+```
+
+### Continuous session recording
+
+Below is an example showing how to create a session in `CONTINUOUS` mode. Continuous session recordings **stream** all the data received between calling `Start` and `Stop` - 
+but only **save** a rolling window data (90 seconds by default) when:
+
+- an exception or error occurs;
+- when `Save` is called; or
+- progrmmatically, when the auto-save attribute is attached to a span.
+
+```go
+session := &session_recorder.Session{
+    Name: "This is test session",
+    SessionAttributes: map[string]interface{}{
+        "accountId":   "1234",
+        "accountName": "Acme Corporation",
+    },
+}
+
+err = sr.Start(types.SESSION_TYPE_CONTINUOUS, session)
+if err != nil {
+    log.Fatal(err)
+}
+
+// do something here
+
+err = sr.Save()
+if err != nil {
+    log.Fatal(err)
+}
+
+// do something here
+
+err = sr.Save()
+if err != nil {
+    log.Fatal(err)
+}
+
+// do something here
+
+err = sr.Stop(nil)
+if err != nil {
+    log.Fatal(err)
+}
+```
+
+Continuous session recordings may also be saved from within any service or component involved in a trace by adding the attributes below to a span:
+
+```go
+import (
+	"context"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
+    multiplayer "github.com/multiplayer-app/multiplayer-otlp-go/trace"
+)
+
+ctx := context.Background()
+span := trace.SpanFromContext(ctx)
+
+if span != nil {
+	span.SetAttributes(
+		attribute.Bool(
+            multiplayer.ATTR_MULTIPLAYER_CONTINUOUS_SESSION_AUTO_SAVE,
+            true
+        ),
+		attribute.String(
+            multiplayer.ATTR_MULTIPLAYER_CONTINUOUS_SESSION_AUTO_SAVE_REASON,
+            "Some reason"
+        ),
+	)
 }
 ```
 
